@@ -1,3 +1,16 @@
+The project contains a R project on the Ammodytes marinus eff otolith project
+
 This dolcument contains information on files and scrips entering the R-project
-and how they are created and how to reproduce them.
+, how they are created and how to reproduce them.
  
+"raw-larvae-otolith-data-manipulation-1.r"
+Input files:
+raw_larvae_otolith_measurements.csv, the original raw data
+mark_to_delete_r1.csv, otolith readings to delete from radius one
+mark_to_delete_r2.csv, otolith readings to delete from radius two
+
+The script:
+1. Cleans up wrong readings
+2. Transforms otolith measurements from pixels to microns
+3. Recalculates distance between rings and distance to otolith center
+after having cleaned up wrong readings

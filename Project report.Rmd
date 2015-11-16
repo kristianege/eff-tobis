@@ -1,0 +1,375 @@
+---
+title: "KorTobis project report"
+author: "Kristian Ege Nielsen"
+output: html_document
+---
+
+### Preliminary talk
+Primarily this document is ment as a runthrough of the data treatment, but by embedding the project R-scripts it both serves as a master document and complete documentation of entire R-project related to the otolith part of the KorTobis project.  
+
+All relevant project datafiles, functions and scripts are found in the R-studio project folder eff-tobis, as I find this the current best pracsis of organization. This folder is furthermore linked to a version control on github, primarily on first hand for my sake, as I'm a bit tired of to many versions of files. If you want to dig into it and use the version control please be my guest, this would make life a lot easier for everybody on the long run... 
+
+###And for the actual data stuff
+
+The following code chunk runs the script _manipulation-1-raw-larvae-otolith-data.R_ 
+
+```{r,warning=FALSE,message=FALSE,cache=FALSE}
+source("manipulation-1-raw-larvae-otolith-data.R")
+```
+The script treats the raw otolith larval otolith readings _raw_larvae_otolith_measurements.csv_ and produces the following:  
+
+1. Removes wrongly marked otolith rings, the marks were reviewed in pictures using a Matlab script  
+2. Transforms all distances from pixels to microns  
+3. Recalculates distance between the otolith dayli rings after removal of wrongly red rings  
+4. Ring width are filtered so that they are between 0.5 and 9 microns  
+5. Ringwidths bigger than 1.8 the following ring are excluded, this in order to sort out areas with no readings.  
+
+The resulting output dataframe is called _oto2_ also the raw data is maintained in the global invironment as _oto_raw_ both data frames are used in the next script _manipulation-2-bestage-selection-and-more.R_:
+
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(warning=FALSE, message=FALSE,cache=TRUE)
+```
+
+
+```{r,warning=FALSE,message=FALSE,cache=FALSE}
+source("manipulation-2-bestage-selection-and-more.R")
+```
+
+This script is a bit more comprehensive and draws on several other scipts 
+
+1. Removes readings in the outer 10% of the otolith to avoid any edge effect. Resulting data frame _oto_no_edge_  
+
+2. Removes otoliths in which the predicted linear relationship between distance to center and the ring width does not pass through an interval of max and min ringwidth at 20 microns. The resulting data frame _oto_inc_fit_  
+
+3. A linear model is then run on all each individual otolith radial reading. The model information is added to the data frame so that the data frame _oto_filtered_model_ contains all model parameterisations for each red otolith radius.  
+
+4. Model information as residuals, cooks distance, fitted values for each ringwidth is found in the data frame _oto_filtered_all_  
+
+5. The script then sources three other scripts that are quite complex to explain, but the output is a selection of best ages for each fish. Where best age is selected on basis of highest number of daily increments in estimate, and secondary higher age this is done for both measured radii.  
+
+6. Metadata as position etc. is added
+
+7. The two data frames _oto_filtered_all_ and _oto_filtered_model_ are then synced to include only the otoliths with "best ages". 
+
+The output data frames are:  
+  - _oto4_, containing all measurements after the above mentioned filtering  
+  - _oto5_, containing the lm linear model parameters per filtered and selected larvae. These data frames are also available as csv's _otolith_filtered_all_marks_ and _otolith_filtered_ in the project folder.   
+ 
+### MAP of samples
+So the following is a map of the samples. I you look in the _Project report.Rmd_ file you'll see the code. 
+
+```{r,echo=FALSE,message=FALSE,warning=FALSE,cache=TRUE}
+
+# Indlæser Maps library ---------------------------------------------------
+library("maps")
+library("mapdata")
+
+# Indlæser MIK filer ------------------------------------------------------
+
+farivar_map<-read.csv("map_farivar.csv",sep=",",header=T)
+sample_id<-oto5%>%select(KorTobis_sample_id)%>%distinct(KorTobis_sample_id)
+relevant_meta<-semi_join(meta,sample_id)
+fishery<-farivar_map%>%filter(fishery_dredge=="Fishery")
+dredge<-farivar_map%>%filter(fishery_dredge=="Dredge")
+
+
+###################### MAP PLOT #######################
+###################### MAP ###########################
+#windows()
+#par(mar=c(2.3,2.1,1,1))
+par(mar=c(3,3,1,0.5))
+long<- -8:11
+lati<- 45:64
+xlimit=c(-1,11)
+ylimit=c(52,59)
+plot(long,lati, xlim=xlimit,ylim=ylimit,col = "red", cex = 0, pch = 16, add=TRUE,xlab = "",ylab = "",cex.axis=1.3,mgp = c(1, 0.2, 0),tck=0.00)
+lon<- c(1,3,6)
+lat<-c(55.6,56,57.5)
+area<-c("Dogger Bank (DB)","Elbow Spit (ES)", "Fisher Bank (FB)") 
+areas<-data.frame(area,lon,lat)      
+map("worldHires",xlim=xlimit,ylim=ylimit, col = "grey90", fill=TRUE,add=TRUE)
+points(relevant_meta$stlondec,relevant_meta$stlatdec,col="black",pch=1,cex=1.2)
+points(fishery$lonPosStartDec,fishery$latPosStartDec,col="black",pch=3,cex=1.2)
+points(dredge$lonPosStartDec,dredge$latPosStartDec,col="black",pch=2,cex=1.2)
+text(areas$lon,areas$lat,areas$area, cex = 1.2, col="black")
+box()
+legend("topleft",c("Larvae","Pre-winter","Post-winter"),pch=c(1,2,3),pt.cex=1.2,cex=1.2)
+mtext("Latitude", side=2, line=1.4, cex=1.2)
+mtext("Longitude", side=1, line=1.3, cex=1.2)
+
+rm(farivar_map,sample_id,relevant_meta,fishery,dredge,lat,lon,area,areas,long,lati,xlimit,ylimit)
+
+```
+
+
+###And some of the graphs from my master
+
+A bit further filtering, slopes between 0 and 0.075, selects radius 1 (The longest measured) and adding a shorter name for the station for figures. Output
+```{r,echo=FALSE}
+#shorter names for the 
+station_rename<- read.csv("station_rename.csv", header=TRUE, sep=",", na.strings="NA", dec=".")
+d <- subset(oto5,measured_radius == 1 & slope > 0 & slope<0.075)
+d$year<-factor(d$year)
+#short names for stations added
+d<-d%>%left_join(.,station_rename,by="KorTobis_sample_id")%>%mutate(st_shortname=paste(as.character(area),st_shortname,sep=""))
+d2<-subset(oto4,measured_radius==1)
+d$st_shortname<-factor(d$st_shortname)
+
+#These guys have odd lengths 
+d<-filter(d,!larvae_id%in%c("CY_38_02-05-06_02","CY_25_22-04-06_18","CY_37_01-05-06_18","PK_09_21-04-08_19"))
+
+all08<-d%>%filter(year==2008)
+all09<-d%>%filter(year==2009)
+all06<-d%>%filter(year==2006)
+
+#pulls out fish with no length measured
+d_no_NA<-filter(d,!is.na(sd_lgd))
+
+```
+
+
+The larvae length distribution:
+```{r,echo=FALSE,message=FALSE,warning=FALSE}
+#All this takes care of the larvae length distribution 
+
+length_dist<-read.csv("Larvae_length_distribution.csv",header=TRUE,sep=',',na.strings=c("NA"))
+meta<-select(meta,KorTobis_sample_id,posixct_time,year,monthh,dayy,st_hour,st_min,stlondec,stlatdec)
+
+larvaelength2$KorTobis_sample_id<-substr(larvaelength2$larvae_id,1,14)
+larvaelength2<-merge(larvaelength2,meta,by="KorTobis_sample_id", all.x=TRUE)
+ 
+
+#extract larvae length from 2008 samples
+larvaelength2008<-larvaelength2%>%
+  mutate(sub_sample=rep(1,dim(larvaelength2)[1]))%>%
+  filter(year==2008,!is.na(sd_lgd))%>%
+  select(KorTobis_sample_id,sub_sample,sd_lgd)
+
+length_dist2 <- rbind(length_dist,larvaelength2008)
+
+
+####### Merge with meta data and apply area
+length_dist2<-merge(length_dist2,meta,by="KorTobis_sample_id", all.x=TRUE)
+
+length_dist2$area<-unlist(lapply(length_dist2$stlondec,areafun))
+
+length_dist2<-length_dist2%>%
+      left_join(.,station_rename,by="KorTobis_sample_id")%>%
+      mutate(st_shortname=paste(as.character(area),st_shortname,sep=""),
+             st_julian_day = as.POSIXlt(as.character(posixct_time),format="%Y%m%d")$yday)
+
+
+
+########
+l_06<-length_dist2%>%filter(year==2006)
+l_08<-length_dist2%>%filter(year==2008)
+l_09<-length_dist2%>%filter(year==2009)
+###########
+
+cDB06<-coef(all06%>%filter(area=="DB")%>%lm(age~sd_lgd,data=.))
+cDB08<-coef(all08%>%filter(area=="DB")%>%lm(age~sd_lgd,data=.))
+cDB09<-coef(all09%>%filter(area=="DB")%>%lm(age~sd_lgd,data=.))
+cES06<-coef(all06%>%filter(area=="ES")%>%lm(age~sd_lgd,data=.))
+cES08<-coef(all08%>%filter(area=="ES")%>%lm(age~sd_lgd,data=.))
+cES09<-coef(all09%>%filter(area=="ES")%>%lm(age~sd_lgd,data=.))
+cFB08<-coef(all08%>%filter(area=="FB")%>%lm(age~sd_lgd,data=.))
+cFB09<-coef(all09%>%filter(area=="FB")%>%lm(age~sd_lgd,data=.))
+
+
+l_06DB<-l_06%>%filter(area=="DB")%>%mutate(age=sd_lgd*cDB06[2]+cDB06[1])
+l_08DB<-l_08%>%filter(area=="DB")%>%mutate(age=sd_lgd*cDB08[2]+cDB08[1])
+l_09DB<-l_09%>%filter(area=="DB")%>%mutate(age=sd_lgd*cDB09[2]+cDB09[1])
+
+l_06ES<-l_06%>%filter(area=="ES")%>%mutate(age=sd_lgd*cES06[2]+cES06[1])
+l_08ES<-l_08%>%filter(area=="ES")%>%mutate(age=sd_lgd*cES08[2]+cES08[1])
+l_09ES<-l_09%>%filter(area=="ES")%>%mutate(age=sd_lgd*cES09[2]+cES09[1])
+
+l_08FB<-l_08%>%filter(area=="FB")%>%mutate(age=sd_lgd*cFB08[2]+cFB08[1])
+l_09FB<-l_09%>%filter(area=="FB")%>%mutate(age=sd_lgd*cFB09[2]+cFB09[1])
+
+l_06 <- bind_rows(l_06DB,l_06ES) 
+l_08 <- bind_rows(l_08DB,l_08ES,l_08FB)
+l_09 <- bind_rows(l_09DB,l_09ES,l_09FB)
+
+rm(cDB06,cDB08,cDB09,cES06,cES08,cES09,cFB08,cFB09,l_09FB,l_08FB,l_09ES,l_08ES,l_06ES,l_09DB,l_08DB,l_06DB,larvaelength2008,station_rename)
+
+```
+
+
+The raw data for the juvenile and adult fish resides in the csv _Farivar_22.04.15.csv_ and the meta data for the pre winter samlples in _meta_SK.csv_ and for the post vinter samples in _meta_TBM.csv_
+```{r,echo=FALSE}
+
+#Loads otolith readings from juvenile and adult fish. Before and after winter 
+farivar<-read.csv("Farivar_22.04.15.csv",header=TRUE,sep=',',na.strings=c("NA"))
+
+#meta data from before winter
+meta_SK<-read.csv("meta_SK.csv",header=TRUE,sep=',',na.strings=c("NA"),strip.white=TRUE)
+
+#meta data from after winter
+meta_TBM<-read.csv("meta_TBM.csv",header=TRUE,sep=',',na.strings=c("NA"))
+   
+#Loading costume functions used in script
+#These have been used in the previous code
+#source("zero_to_na.R")
+#source("all_model_info.R")
+
+#This transforms positions from degree decimal minutes to dec degrees
+source("deg_decmin_2decdeg.R")
+
+############################################################################
+# Measurement workup and cleanup, done equivalently to the larvae otoliths -
+############################################################################
+
+farivar<-farivar%>%
+      mutate(dist_btw_markers=dist_btw_markers/X20_pix_pr_micron,
+             dist_to_center=dist_to_center/X20_pix_pr_micron)%>%
+      select(-magnification,-X20_pix_pr_micron)
+
+farivar1 <-  farivar %>%
+      arrange(fish_id,mark_no)%>%
+      group_by(fish_id)%>%
+      mutate(dist_to_center = cumsum(dist_btw_markers),
+            dist_to_center = lag(dist_to_center, default = NA), 
+            dist_btw_markers = zero_to_na(dist_btw_markers)) %>%
+      filter(!is.na(dist_btw_markers),!is.na(dist_to_center))%>%  #removes center to 2nd mark dist and last mark with dist = 0
+      filter(dist_btw_markers  < 1.8 * lead(dist_btw_markers, default = Inf))%>%
+      ungroup()
+
+
+faulty_measures<-farivar1%>%filter(dist_to_center<15)%>%distinct(fish_id) #these could be be corrected if I had the time
+
+farivar1<-farivar1%>%anti_join(.,faulty_measures,by="fish_id")%>%filter(dist_btw_markers>0.5,dist_btw_markers<10,dist_to_center<140)
+
+rm(faulty_measures)
+############################################################################
+# Workup of regression info -----------------------------------------------
+############################################################################
+farivar2 <- all_model_info(farivar1%>%filter(dist_to_center<140),c("fish_id"),"dist_btw_markers","dist_to_center")
+
+#Dredge or Fishery selection 
+
+farivar2 <- farivar2%>%
+      mutate(fishery_dredge = substr(fish_id,1,1),
+                              fishery_dredge = ifelse(fishery_dredge=="T","Fishery","Dredge"))%>% #fishery dredge factor
+      left_join(.,farivar%>%select(fish_id,fish_length)%>%distinct(fish_id),by="fish_id") #re-adds the fish lengths
+
+
+
+
+farivar_fish <- farivar2%>%filter(fishery_dredge=="Fishery")%>%
+      mutate(year=paste("20",substr(fish_id,4,5),sep=""),
+             hatch_year=factor(as.numeric(year)-1),
+             meta_id = paste(substr(fish_id,1,11),substring(fish_id,14,14),sep="")) #note that this only works because all stations contains one figure
+
+farivar_dredge <- farivar2%>%filter(fishery_dredge=="Dredge")%>%
+      mutate(year=paste("20",substr(fish_id,3,4),sep=""),
+             hatch_year=factor(year),
+             meta_id = paste(substr(fish_id,1,10),substring(fish_id,13,14),sep="")) #note that this only works because all stations contains two figures
+
+
+farivar2<-rbind(farivar_fish,farivar_dredge)
+
+rm(farivar_fish,farivar_dredge)
+
+
+#farivar1 is used next to create regression information for same fish as in farivar2
+farivar1<-inner_join(farivar1,select(farivar2,fish_id,fishery_dredge,year,hatch_year,meta_id),by=("fish_id"))
+
+###########################################################################
+# Dataset with individual increment model info ----------------------------
+###########################################################################
+# 
+# library(broom)
+# regression<-farivar1 %>%      #Adds list of all lm objects with fish_id as key
+#       group_by(fish_id)%>% 
+#       do(fit=lm(dist_btw_markers~dist_to_center, data = .))
+# 
+# farivar3<-regression%>% 
+#       glance(fit)%>%          #produces all statistics related to each increment in the regression 
+#       mutate(fishery_dredge = substr(fish_id,1,1),
+#              fishery_dredge = ifelse(fishery_dredge=="T","Fishery","Dredge"))
+# 
+# farivar_fish <- farivar3%>%
+#       filter(fishery_dredge=="Fishery")%>%
+#       mutate(year = paste("20",substr(fish_id,4,5),sep=""),
+#              hatch_year = factor(as.numeric(year)-1),
+#              meta_id = paste(substr(fish_id,1,11),substr(fish_id,14,14),sep=""))%>%
+#       select(-year)
+# 
+# farivar_dredge <- farivar3%>%
+#       filter(fishery_dredge=="Dredge")%>%
+#       mutate(year=paste("20",substr(fish_id,3,4),sep=""),
+#              hatch_year=factor(year),
+#              meta_id = paste(substr(fish_id,1,10),substr(fish_id,13,14),sep=""))%>%
+#       select(-year)
+# 
+# farivar3<-rbind(farivar_fish,farivar_dredge)
+# rm(farivar_fish,farivar_dredge)
+
+############################################################################
+# Meta data workup --------------------------------------------------------
+############################################################################
+# The TBM data
+meta_TBM<-meta_TBM%>%
+      mutate(latPosStartDec = deg_decmin_2decdeg(as.character(latPosStartText)), #converting position format to dec. degrees
+             lonPosStartDec = deg_decmin_2decdeg(as.character(lonPosStartText)),
+             latPosEndDec   = deg_decmin_2decdeg(as.character(latPosEndText)),
+             lonPosEndDec   = deg_decmin_2decdeg(as.character(lonPosEndText)),
+             day = substr(as.character(Dato),1,2),
+             month = substr(as.character(Dato),4,5),
+             year = substr(as.character(Dato),7,10),
+             rdate = as.Date(as.character(Dato),format='%d/%m/%Y'),
+             meta_id = paste(Navn,Station,sep="-"),
+             station=Station
+      )%>%
+      select(meta_id,latPosStartDec,lonPosStartDec,day,month,year,rdate,station) #I choose start position as st. position and date
+
+#The Dredging
+meta_SK<-meta_SK%>%
+      mutate(meta_id = paste(paste(paste("SK",substr(as.character(year),3,4),sep=""),as.character(cruise),sep="-"),as.character(station),sep="-"),
+             day = substr(as.character(datestart),1,2),
+             month = substr(as.character(datestart),4,5),
+             year = substr(as.character(datestart),7,10),
+             rdate = as.Date(as.character(datestart),format='%d/%m/%Y')
+      )%>%
+      select(meta_id,latPosStartDec,lonPosStartDec,day,month,year,rdate,station)#I choose start position as st. position and date
+
+meta_farivar<-rbind(meta_TBM,meta_SK)
+###########################################################################
+# Merging meta ------------------------------------------------------------
+###########################################################################
+farivar1<-farivar1%>%select(-year)%>%left_join(.,meta_farivar,by=("meta_id"))%>%filter(dist_btw_markers<7.5,dist_btw_markers>0.5)
+farivar2<-farivar2%>%select(-year)%>%left_join(.,meta_farivar,by=("meta_id"))
+
+plot(farivar$dist_to_center,farivar$dist_btw_markers,pch=".")
+#now the stribed structure in the data is obviously derived directly from the csv raw data file
+#if it is an artefact of pixel construction, image pro settings, or rounding of some figures. The
+#rounding seem most likely as it is so regular. 
+
+#For mapping off stations
+# map_farivar<-meta_farivar%>%
+#       semi_join(.,farivar2,by="meta_id")%>%
+#       mutate(fishery_dredge = substr(meta_id,1,1),
+#              fishery_dredge = ifelse(fishery_dredge=="T","Fishery","Dredge"))
+# write.csv(map_farivar,file="C:\\EFF_korttidsprog_tobis\\Fiske_otolitter\\csv\\map_farivar.csv",row.names=FALSE)
+ 
+rm(meta_SK,meta_TBM,meta_farivar)
+
+#Filtering
+farplotting=farivar1%>%
+      filter(dist_to_center<140,dist_btw_markers<10,dist_btw_markers>0.5)%>%
+      mutate(hatch_year=factor(hatch_year))
+
+farplotting2<-farivar2%>% 
+      filter(slope_estimate<0.075)%>%
+      #nextline here concatenate fishery/dredge and year info
+      mutate(FDyear = paste(substr(fishery_dredge,1,1),substr(as.character(hatch_year),3,4),sep=""))
+```
+
+With and without traeatment
+```{r}
+library(ggplot2)
+plot(farivar$dist_to_center,farivar$dist_btw_markers,pch=".")
+plot(farivar1$dist_to_center,farivar1$dist_btw_markers,pch=".")
+```
+
