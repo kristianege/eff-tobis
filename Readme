@@ -1,16 +1,22 @@
 The project contains a R project on the Ammodytes marinus eff otolith project
 
-This dolcument contains information on files and scrips entering the R-project
-, how they are created and how to reproduce them.
- 
-"raw-larvae-otolith-data-manipulation-1.r"
-Input files:
-raw_larvae_otolith_measurements.csv, the original raw data
-mark_to_delete_r1.csv, otolith readings to delete from radius one
-mark_to_delete_r2.csv, otolith readings to delete from radius two
+The fastest way to get an overview of the project is to open the "Project report.html" file in your browser
 
-The script:
-1. Cleans up wrong readings
-2. Transforms otolith measurements from pixels to microns
-3. Recalculates distance between rings and distance to otolith center
-after having cleaned up wrong readings
+The folder contains all data files, scripts and packages used in the project data treatment.
+
+The main file is the "Project_report.rmd", an R-markdown file containing all code and information on the project
+
+Primarily this Report is ment as a runthrough of the data treatment, but by embedding the project R-scripts it both serves as a master document and complete documentation of entire R-project related to the otolith part of the KorTobis project.
+
+This folder is furthermore linked to a version control on github https://github.com/kristianege/eff-tobis, primarily on first hand for my sake, as I’m a bit tired of to many versions of files. You can simply download the project folder from the github adress
+
+The most easy way to evaluate and ad changes to pressent report is to open the Project report.Rmd file in R studie and compile to HTML with knitr. 
+
+The report itself can viewed by opening the "Project report.html" file in the project folder in your browser, or if in r-studio by opening the project and just clicking the file in the file browser.
+
+You can extract alle the R code in the markdown document with by running:
+
+library (knitr)
+purl(“Project report.rmd”,output=“Your_R_File_name.R”)
+
+in R. 
