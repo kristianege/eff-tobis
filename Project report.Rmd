@@ -1,34 +1,80 @@
 ---
 title: "KorTobis project report"
 author: "Kristian Ege Nielsen"
-output: html_document
+output: 
+  html_document:
+    number_sections: true
+    css: custom.css
+    toc: true
+    
 ---
 
-### Preliminary talk
-Primarily this document is ment as a runthrough of the data treatment, but by embedding the project R-scripts it both serves as a master document and complete documentation of entire R-project related to the otolith part of the KorTobis project.  
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(warning=FALSE, message=FALSE,cache=FALSE)
+```
 
-All relevant project datafiles, functions and scripts are found in the R-studio project folder eff-tobis, as I find this the current best pracsis of organization. This folder is furthermore linked to a version control on github, primarily on first hand for my sake, as I'm a bit tired of to many versions of files. If you want to dig into it and use the version control please be my guest, this would make life a lot easier for everybody on the long run... 
+# Preliminary talk
+1 Preliminary info on the data and project structure
+This document is ment as a runthrough of the data treatment, but by embedding the project R-scripts it both serves as a master document and complete documentation of entire R-project related to the otolith part of the KorTobis project.
 
-###And for the actual data stuff
+The report is written in r-markdown
 
-The following code chunk runs the script _manipulation-1-raw-larvae-otolith-data.R_ 
+All relevant project datafiles, functions and scripts are found in the R-studio project folder eff-tobis, as I find this the current best pracsis of organization. This folder is furthermore linked to a version control on github https://github.com/kristianege/eff-tobis, primarily on first hand for my sake, as I’m a bit tired of to many versions of files. You can simply download the project folder in its current state as a zip file from the github repository or do it directly from this link.
 
-```{r,warning=FALSE,message=FALSE,cache=FALSE}
+If you want to dig into the version control please be my guest, this would make life a lot easier for everybody on the long run, and deminish a lot of repetition.
+
+The most easy way to evaluate and ad changes to pressent report is to open the Project report.Rmd file in R studie and compile to HTML with knitr. The report itself can viewed by oppening the Project report.html file in the project folder in your browser, or if in r-studio just clicking on it.
+
+The newer versions of R-studio comes with packrat integration, however you have to install the packrat package.
+
+You can extract alle the R code in the markdown document with by running:
+
+```{r, eval=FALSE}
+library (knitr)
+purl(“Projectreport.rmd”,output=“Your_R_File_name.R”)
+
+```
+
+
+#Methods
+##Otolith preperation, imaging and measurement documentation
+
+The following files contains information on how otolith were worked up.
+
+* _Protocol_otolith_preparation.doc_, documentation on how otoliths were prepared  
+* _Protocol_otolith_image&measurement.doc_, documentation on imaging and measurements  
+* _Naming of images.doc_, how images were named
+
+I’ll just briefely note here that for each larvae if possible both otolith were measured. But in some cases one was lost. In each otolith dayli increments were measured in two radii, on in direction of fastest growth and one some other direction, usually the best visible alternative direction, however not in any systematic way.
+
+# Otolith data workup
+## Larvae otoliths
+### csv data files
+* _raw_larvae_otolith_measurements.csv_, the raw larvae otolith data
+* _mark_to_delete_r1.csv_, wrongly marked dayli increments to be deleted for radius 1  
+* _mark_to_delete_r1.csv_, wrongly marked dayli increments to be deleted for radius 2  
+* _KorTobis_metadata.csv_, Meta data for sampled larvae  
+* _KorTobis_larvaelgd2_sdl2.csv_, Standard length of treated larvae
+* _station_rename.csv_, abbreviated station names mostly for plotting purpouses  
+
+I have only included the in the indirectly in this document, since it is rather comprehensive and several pages long. In the following code chuncks the used scripts are sourced. If your want to review the files you should look into the sourced R code.
+
+The following code chunk runs the script _manipulation-1-raw-larvae-otolith-data.R_
+
+### R code
+```{r}
 source("manipulation-1-raw-larvae-otolith-data.R")
 ```
-The script treats the raw otolith larval otolith readings _raw_larvae_otolith_measurements.csv_ and produces the following:  
 
-1. Removes wrongly marked otolith rings, the marks were reviewed in pictures using a Matlab script  
-2. Transforms all distances from pixels to microns  
-3. Recalculates distance between the otolith dayli rings after removal of wrongly red rings  
-4. Ring width are filtered so that they are between 0.5 and 9 microns  
-5. Ringwidths bigger than 1.8 the following ring are excluded, this in order to sort out areas with no readings.  
+The script treats the raw larval otolith readings _raw_larvae_otolith_measurements.csv_ and produces the following:  
 
-The resulting output dataframe is called _oto2_ also the raw data is maintained in the global invironment as _oto_raw_ both data frames are used in the next script _manipulation-2-bestage-selection-and-more.R_:
+* 1. Removes wrongly marked otolith rings, the marks were reviewed in  pictures using a Matlab script   
+* 2. Transforms all distances from pixels to microns    
+* 3. Recalculates distance between the otolith dayli rings after removal of wrongly red rings  
+* 4. Ring width are filtered so that they are between 0.5 and 9 microns  5. Ringwidths bigger than 1.8 the following ring are excluded, this in order to sort out areas with no readings.  
 
-```{r global_options, include=FALSE}
-knitr::opts_chunk$set(warning=FALSE, message=FALSE,cache=TRUE)
-```
+The resulting output dataframe is called _oto2_ also the raw data is maintained in the global environment as _oto_raw_ both data frames are used in the next script _manipulation-2-bestage-selection-and-more.R_:
+
 
 
 ```{r,warning=FALSE,message=FALSE,cache=FALSE}
@@ -47,65 +93,18 @@ This script is a bit more comprehensive and draws on several other scipts
 
 5. The script then sources three other scripts that are quite complex to explain, but the output is a selection of best ages for each fish. Where best age is selected on basis of highest number of daily increments in estimate, and secondary higher age this is done for both measured radii.  
 
-6. Metadata as position etc. is added
+6. Metadata as position etc. is added  
 
-7. The two data frames _oto_filtered_all_ and _oto_filtered_model_ are then synced to include only the otoliths with "best ages". 
+7. The two data frames _oto_filtered_all_ and _oto_filtered_model_ are then synced to include only the otoliths with "best ages".  
 
 The output data frames are:  
-  - _oto4_, containing all measurements after the above mentioned filtering  
-  - _oto5_, containing the lm linear model parameters per filtered and selected larvae. These data frames are also available as csv's _otolith_filtered_all_marks_ and _otolith_filtered_ in the project folder.   
- 
-### MAP of samples
-So the following is a map of the samples. I you look in the _Project report.Rmd_ file you'll see the code. 
+  * _oto4_, containing all measurements after the above mentioned filtering  
+  * _oto5_, containing the lm linear model parameters per filtered and selected larvae. These data frames are also available as csv's _otolith_filtered_all_marks_ and _otolith_filtered_ in the project folder.   
+  
+### Further age-length cleanup
+In the data frame d for plotting and some analysis including standard lengths, age and length outliers are removed and and stations are given a abbreveated name. To catagorize larvae as smaller or bigger, measured larvae are divided into larvae with or without secondary growth center in the coloumn growth_center this both for data frames _d_, _oto2_, _oto4_, _oto5_.
 
-```{r,echo=FALSE,message=FALSE,warning=FALSE,cache=TRUE}
-
-# Indlæser Maps library ---------------------------------------------------
-library("maps")
-library("mapdata")
-
-# Indlæser MIK filer ------------------------------------------------------
-
-farivar_map<-read.csv("map_farivar.csv",sep=",",header=T)
-sample_id<-oto5%>%select(KorTobis_sample_id)%>%distinct(KorTobis_sample_id)
-relevant_meta<-semi_join(meta,sample_id)
-fishery<-farivar_map%>%filter(fishery_dredge=="Fishery")
-dredge<-farivar_map%>%filter(fishery_dredge=="Dredge")
-
-
-###################### MAP PLOT #######################
-###################### MAP ###########################
-#windows()
-#par(mar=c(2.3,2.1,1,1))
-par(mar=c(3,3,1,0.5))
-long<- -8:11
-lati<- 45:64
-xlimit=c(-1,11)
-ylimit=c(52,59)
-plot(long,lati, xlim=xlimit,ylim=ylimit,col = "red", cex = 0, pch = 16, add=TRUE,xlab = "",ylab = "",cex.axis=1.3,mgp = c(1, 0.2, 0),tck=0.00)
-lon<- c(1,3,6)
-lat<-c(55.6,56,57.5)
-area<-c("Dogger Bank (DB)","Elbow Spit (ES)", "Fisher Bank (FB)") 
-areas<-data.frame(area,lon,lat)      
-map("worldHires",xlim=xlimit,ylim=ylimit, col = "grey90", fill=TRUE,add=TRUE)
-points(relevant_meta$stlondec,relevant_meta$stlatdec,col="black",pch=1,cex=1.2)
-points(fishery$lonPosStartDec,fishery$latPosStartDec,col="black",pch=3,cex=1.2)
-points(dredge$lonPosStartDec,dredge$latPosStartDec,col="black",pch=2,cex=1.2)
-text(areas$lon,areas$lat,areas$area, cex = 1.2, col="black")
-box()
-legend("topleft",c("Larvae","Pre-winter","Post-winter"),pch=c(1,2,3),pt.cex=1.2,cex=1.2)
-mtext("Latitude", side=2, line=1.4, cex=1.2)
-mtext("Longitude", side=1, line=1.3, cex=1.2)
-
-rm(farivar_map,sample_id,relevant_meta,fishery,dredge,lat,lon,area,areas,long,lati,xlimit,ylimit)
-
-```
-
-
-###And some of the graphs from my master
-
-A bit further filtering, slopes between 0 and 0.075, selects radius 1 (The longest measured) and adding a shorter name for the station for figures. Output
-```{r,echo=FALSE}
+```{r}
 #shorter names for the 
 station_rename<- read.csv("station_rename.csv", header=TRUE, sep=",", na.strings="NA", dec=".")
 d <- subset(oto5,measured_radius == 1 & slope > 0 & slope<0.075)
@@ -125,80 +124,55 @@ all06<-d%>%filter(year==2006)
 #pulls out fish with no length measured
 d_no_NA<-filter(d,!is.na(sd_lgd))
 
-```
+#For small and larger larvae selection (With or without secondary growth center)
+oto_growth_center <- oto_raw %>% 
+  group_by(pic_id)%>%
+  summarize(growth_center=mean(dist_sec_growth_center))%>%
+  mutate(growth_center = ifelse(is.na(growth_center),"No_sec_growth_center","Have_sec_growth_center"))
 
 
-The larvae length distribution:
-```{r,echo=FALSE,message=FALSE,warning=FALSE}
-#All this takes care of the larvae length distribution 
-
-length_dist<-read.csv("Larvae_length_distribution.csv",header=TRUE,sep=',',na.strings=c("NA"))
-meta<-select(meta,KorTobis_sample_id,posixct_time,year,monthh,dayy,st_hour,st_min,stlondec,stlatdec)
-
-larvaelength2$KorTobis_sample_id<-substr(larvaelength2$larvae_id,1,14)
-larvaelength2<-merge(larvaelength2,meta,by="KorTobis_sample_id", all.x=TRUE)
- 
-
-#extract larvae length from 2008 samples
-larvaelength2008<-larvaelength2%>%
-  mutate(sub_sample=rep(1,dim(larvaelength2)[1]))%>%
-  filter(year==2008,!is.na(sd_lgd))%>%
-  select(KorTobis_sample_id,sub_sample,sd_lgd)
-
-length_dist2 <- rbind(length_dist,larvaelength2008)
+oto2 <- oto2%>%
+  left_join(.,oto_growth_center,by="pic_id")
 
 
-####### Merge with meta data and apply area
-length_dist2<-merge(length_dist2,meta,by="KorTobis_sample_id", all.x=TRUE)
+oto4 <- oto4%>%
+  left_join(.,oto_growth_center,by="pic_id")
 
-length_dist2$area<-unlist(lapply(length_dist2$stlondec,areafun))
+oto5 <- oto5%>%
+  left_join(.,oto_growth_center,by="pic_id")
 
-length_dist2<-length_dist2%>%
-      left_join(.,station_rename,by="KorTobis_sample_id")%>%
-      mutate(st_shortname=paste(as.character(area),st_shortname,sep=""),
-             st_julian_day = as.POSIXlt(as.character(posixct_time),format="%Y%m%d")$yday)
-
+d <- d%>%
+  left_join(.,oto_growth_center,by="pic_id")
 
 
-########
-l_06<-length_dist2%>%filter(year==2006)
-l_08<-length_dist2%>%filter(year==2008)
-l_09<-length_dist2%>%filter(year==2009)
-###########
-
-cDB06<-coef(all06%>%filter(area=="DB")%>%lm(age~sd_lgd,data=.))
-cDB08<-coef(all08%>%filter(area=="DB")%>%lm(age~sd_lgd,data=.))
-cDB09<-coef(all09%>%filter(area=="DB")%>%lm(age~sd_lgd,data=.))
-cES06<-coef(all06%>%filter(area=="ES")%>%lm(age~sd_lgd,data=.))
-cES08<-coef(all08%>%filter(area=="ES")%>%lm(age~sd_lgd,data=.))
-cES09<-coef(all09%>%filter(area=="ES")%>%lm(age~sd_lgd,data=.))
-cFB08<-coef(all08%>%filter(area=="FB")%>%lm(age~sd_lgd,data=.))
-cFB09<-coef(all09%>%filter(area=="FB")%>%lm(age~sd_lgd,data=.))
-
-
-l_06DB<-l_06%>%filter(area=="DB")%>%mutate(age=sd_lgd*cDB06[2]+cDB06[1])
-l_08DB<-l_08%>%filter(area=="DB")%>%mutate(age=sd_lgd*cDB08[2]+cDB08[1])
-l_09DB<-l_09%>%filter(area=="DB")%>%mutate(age=sd_lgd*cDB09[2]+cDB09[1])
-
-l_06ES<-l_06%>%filter(area=="ES")%>%mutate(age=sd_lgd*cES06[2]+cES06[1])
-l_08ES<-l_08%>%filter(area=="ES")%>%mutate(age=sd_lgd*cES08[2]+cES08[1])
-l_09ES<-l_09%>%filter(area=="ES")%>%mutate(age=sd_lgd*cES09[2]+cES09[1])
-
-l_08FB<-l_08%>%filter(area=="FB")%>%mutate(age=sd_lgd*cFB08[2]+cFB08[1])
-l_09FB<-l_09%>%filter(area=="FB")%>%mutate(age=sd_lgd*cFB09[2]+cFB09[1])
-
-l_06 <- bind_rows(l_06DB,l_06ES) 
-l_08 <- bind_rows(l_08DB,l_08ES,l_08FB)
-l_09 <- bind_rows(l_09DB,l_09ES,l_09FB)
-
-rm(cDB06,cDB08,cDB09,cES06,cES08,cES09,cFB08,cFB09,l_09FB,l_08FB,l_09ES,l_08ES,l_06ES,l_09DB,l_08DB,l_06DB,larvaelength2008,station_rename)
+rm(oto_growth_center)
 
 ```
 
 
-The raw data for the juvenile and adult fish resides in the csv _Farivar_22.04.15.csv_ and the meta data for the pre winter samlples in _meta_SK.csv_ and for the post vinter samples in _meta_TBM.csv_
-```{r,echo=FALSE}
+###Resulting data frames
+So after treatment of raw data and finding the linear relation between ring width and distance from center the following data frames are available:
 
+* _oto_raw_, all the larvae and raw data  
+* _oto2_, treated measurements but before running linear model to find otolith growth, and before selecting according otoliths pr. fish according to “best ages”  
+* _oto4_, all increment measurements after treatment and filtering, including model information. Only otoliths remaining after best ages selection .  
+* _oto5_, containing linear model information from the relation between increment width and distance to center of otolith. Only otoliths remaining after best ages selection
+meta, with worked up metadata for further data exploration, same meta used for length measurements  
+* _d_, see previous section for details  
+
+
+## Fish otolith data workup
+### Csv data files
+Csv files for the fish part of the:
+
+* _Farivar_22.04.15.csv_, raw data of fish otolith measurements
+* _meta_SK.csv_, meta data from dredge samples, pre winter
+* -meta_TBM.csv_, meta data from fishery, post winter
+* _map_farivar.csv_, for mapping of stations
+
+###R code
+
+```{r}
 #Loads otolith readings from juvenile and adult fish. Before and after winter 
 farivar<-read.csv("Farivar_22.04.15.csv",header=TRUE,sep=',',na.strings=c("NA"))
 
@@ -341,7 +315,7 @@ meta_farivar<-rbind(meta_TBM,meta_SK)
 farivar1<-farivar1%>%select(-year)%>%left_join(.,meta_farivar,by=("meta_id"))%>%filter(dist_btw_markers<7.5,dist_btw_markers>0.5)
 farivar2<-farivar2%>%select(-year)%>%left_join(.,meta_farivar,by=("meta_id"))
 
-plot(farivar$dist_to_center,farivar$dist_btw_markers,pch=".")
+#plot(farivar$dist_to_center,farivar$dist_btw_markers,pch=".")
 #now the stribed structure in the data is obviously derived directly from the csv raw data file
 #if it is an artefact of pixel construction, image pro settings, or rounding of some figures. The
 #rounding seem most likely as it is so regular. 
@@ -364,12 +338,296 @@ farplotting2<-farivar2%>%
       filter(slope_estimate<0.075)%>%
       #nextline here concatenate fishery/dredge and year info
       mutate(FDyear = paste(substr(fishery_dredge,1,1),substr(as.character(hatch_year),3,4),sep=""))
+
 ```
 
-With and without traeatment
+### Fish data frames
+
+The fish otolith data is treated in the same ways as the larval otoliths. However no readings have been reevaluated.
+
+* _farivar_ , the raw data
+* _farivar1_, the converted and filtered raw data e.g. pixels to microns conversion etc.
+* _farivar2_, containing linear model information from the relation between increment width and distance to center of otolith
+farplotting, a little further filtered and formatted version of
+* _farivar1_, for details please look at the r code.
+* _farplotting2_, a slightly different version of farivar2.
+
+#The larvae length distribution workup
+Larvae length distribution was investigated by drawing subsamples of the larvae samples. In 2008 only few larvae were pressent and larvae lengths include all larvae including larvae from which otoliths were sampled. Data frames containing information on larvae length distribution are for seperate years l_06, l_08, l_09
+
+## Csv files
+
+* _Larvae_length_distribution.csv_, raw length standard length subsample measurements
+
+###R code
+```{r}
+#All this takes care of the larvae length distribution 
+
+length_dist<-read.csv("Larvae_length_distribution.csv",header=TRUE,sep=',',na.strings=c("NA"))
+meta<-select(meta,KorTobis_sample_id,posixct_time,year,monthh,dayy,st_hour,st_min,stlondec,stlatdec)
+
+larvaelength2$KorTobis_sample_id<-substr(larvaelength2$larvae_id,1,14)
+larvaelength2<-merge(larvaelength2,meta,by="KorTobis_sample_id", all.x=TRUE)
+ 
+
+#extract larvae length from 2008 samples
+larvaelength2008<-larvaelength2%>%
+  mutate(sub_sample=rep(1,dim(larvaelength2)[1]))%>%
+  filter(year==2008,!is.na(sd_lgd))%>%
+  select(KorTobis_sample_id,sub_sample,sd_lgd)
+
+length_dist2 <- rbind(length_dist,larvaelength2008)
+
+
+####### Merge with meta data and apply area
+length_dist2<-merge(length_dist2,meta,by="KorTobis_sample_id", all.x=TRUE)
+
+length_dist2$area<-unlist(lapply(length_dist2$stlondec,areafun))
+
+length_dist2<-length_dist2%>%
+      left_join(.,station_rename,by="KorTobis_sample_id")%>%
+      mutate(st_shortname=paste(as.character(area),st_shortname,sep=""),
+             st_julian_day = as.POSIXlt(as.character(posixct_time),format="%Y%m%d")$yday)
+
+
+
+########
+l_06<-length_dist2%>%filter(year==2006)
+l_08<-length_dist2%>%filter(year==2008)
+l_09<-length_dist2%>%filter(year==2009)
+###########
+
+cDB06<-coef(all06%>%filter(area=="DB")%>%lm(age~sd_lgd,data=.))
+cDB08<-coef(all08%>%filter(area=="DB")%>%lm(age~sd_lgd,data=.))
+cDB09<-coef(all09%>%filter(area=="DB")%>%lm(age~sd_lgd,data=.))
+cES06<-coef(all06%>%filter(area=="ES")%>%lm(age~sd_lgd,data=.))
+cES08<-coef(all08%>%filter(area=="ES")%>%lm(age~sd_lgd,data=.))
+cES09<-coef(all09%>%filter(area=="ES")%>%lm(age~sd_lgd,data=.))
+cFB08<-coef(all08%>%filter(area=="FB")%>%lm(age~sd_lgd,data=.))
+cFB09<-coef(all09%>%filter(area=="FB")%>%lm(age~sd_lgd,data=.))
+
+
+l_06DB<-l_06%>%filter(area=="DB")%>%mutate(age=sd_lgd*cDB06[2]+cDB06[1])
+l_08DB<-l_08%>%filter(area=="DB")%>%mutate(age=sd_lgd*cDB08[2]+cDB08[1])
+l_09DB<-l_09%>%filter(area=="DB")%>%mutate(age=sd_lgd*cDB09[2]+cDB09[1])
+
+l_06ES<-l_06%>%filter(area=="ES")%>%mutate(age=sd_lgd*cES06[2]+cES06[1])
+l_08ES<-l_08%>%filter(area=="ES")%>%mutate(age=sd_lgd*cES08[2]+cES08[1])
+l_09ES<-l_09%>%filter(area=="ES")%>%mutate(age=sd_lgd*cES09[2]+cES09[1])
+
+l_08FB<-l_08%>%filter(area=="FB")%>%mutate(age=sd_lgd*cFB08[2]+cFB08[1])
+l_09FB<-l_09%>%filter(area=="FB")%>%mutate(age=sd_lgd*cFB09[2]+cFB09[1])
+
+l_06 <- bind_rows(l_06DB,l_06ES) 
+l_08 <- bind_rows(l_08DB,l_08ES,l_08FB)
+l_09 <- bind_rows(l_09DB,l_09ES,l_09FB)
+
+rm(cDB06,cDB08,cDB09,cES06,cES08,cES09,cFB08,cFB09,l_09FB,l_08FB,l_09ES,l_08ES,l_06ES,l_09DB,l_08DB,l_06DB,larvaelength2008,station_rename)
+```
+
+## Resulting data frames
+Larvae length distributions are in three seperate dataframes, one for each year, this for plotting purposes:
+
+* _l_06_, lengths from 2006
+* _l_08_, lengths from 2008
+* _l_09_, lengths from 2009
+
+
+# Graphical data exploration
+## MAP of sample positions
+
+```{r,echo=FALSE,message=FALSE,warning=FALSE,cache=TRUE}
+
+# Indlæser Maps library ---------------------------------------------------
+library("maps")
+library("mapdata")
+
+# Indlæser MIK filer ------------------------------------------------------
+
+farivar_map<-read.csv("map_farivar.csv",sep=",",header=T)
+sample_id<-oto5%>%select(KorTobis_sample_id)%>%distinct(KorTobis_sample_id)
+relevant_meta<-semi_join(meta,sample_id)
+fishery<-farivar_map%>%filter(fishery_dredge=="Fishery")
+dredge<-farivar_map%>%filter(fishery_dredge=="Dredge")
+
+
+###################### MAP PLOT #######################
+###################### MAP ###########################
+#windows()
+#par(mar=c(2.3,2.1,1,1))
+par(mar=c(3,3,1,0.5))
+long<- -8:11
+lati<- 45:64
+xlimit=c(-1,11)
+ylimit=c(52,59)
+plot(long,lati, xlim=xlimit,ylim=ylimit,col = "red", cex = 0, pch = 16, add=TRUE,xlab = "",ylab = "",cex.axis=1.3,mgp = c(1, 0.2, 0),tck=0.00)
+lon<- c(1,3,6)
+lat<-c(55.6,56,57.5)
+area<-c("Dogger Bank (DB)","Elbow Spit (ES)", "Fisher Bank (FB)") 
+areas<-data.frame(area,lon,lat)      
+map("worldHires",xlim=xlimit,ylim=ylimit, col = "grey90", fill=TRUE,add=TRUE)
+points(relevant_meta$stlondec,relevant_meta$stlatdec,col="black",pch=1,cex=1.2)
+points(fishery$lonPosStartDec,fishery$latPosStartDec,col="black",pch=3,cex=1.2)
+points(dredge$lonPosStartDec,dredge$latPosStartDec,col="black",pch=2,cex=1.2)
+text(areas$lon,areas$lat,areas$area, cex = 1.2, col="black")
+box()
+legend("topleft",c("Larvae","Pre-winter","Post-winter"),pch=c(1,2,3),pt.cex=1.2,cex=1.2)
+mtext("Latitude", side=2, line=1.4, cex=1.2)
+mtext("Longitude", side=1, line=1.3, cex=1.2)
+
+rm(farivar_map,sample_id,relevant_meta,fishery,dredge,lat,lon,area,areas,long,lati,xlimit,ylimit)
+
+```
+
+# Larvae otoliths
+
+# Larvae length and age relation
+```{r}
+library(ggplot2)
+ggplot(d,aes(age,sd_lgd))+
+  geom_smooth(method=lm)+
+  geom_point()+
+  ylab("Standard length (mm)")+
+  xlab("Age (days)")+
+  theme_classic()
+```
+
+### lm length at age
+```{r}
+lm(data=d,sd_lgd~age)
+```
+
+##Fish otoliths
+Without traeatment
 ```{r}
 library(ggplot2)
 plot(farivar$dist_to_center,farivar$dist_btw_markers,pch=".")
+
+```
+
+and with treatment
+```{r}
 plot(farivar1$dist_to_center,farivar1$dist_btw_markers,pch=".")
+
+```
+
+
+## Fish lenght and growth estimates
+```{r}
+library(beanplot)
+par(mfrow=c(2,1),cex=1.1,mar=c(2,3,1.2,1),tck=-0.01,mgp = c(3, 0.4, 0),cex.main=0.8,cex.axis=0.8,cex.lab=0.9)
+
+beanplot(fish_length~FDyear,data=farplotting2,what=c(1,1,1,1),boxwex = 1.5,log="",side="second",col = c("#CAB2D6", "#33A02C", "#B2DF8A"), border = "#CAB2D6")
+ mtext("Fish length (cm)", side=2, line=1.5,cex=1.1)
+
+par(mar=c(3,3,1.2,1))
+beanplot(slope_estimate~FDyear,data=farplotting2,what=c(1,1,1,1),boxwex = 1.5,log="",side="second",col = c("#CAB2D6", "#33A02C", "#B2DF8A"), border = "#CAB2D6")
+mtext("Otolith growth esimate", side=2, line=1.5,cex=1.1)
+mtext("Dredge and Fishery, for relevant hatch year", side=1, line=1.5,cex=1.1)
+```
+
+### Density plots of fish otolith growth pr station
+```{r}
+library(ggplot2)
+ggplot(filter(farivar2,hatch_year==2008,fishery_dredge=="Fishery"),aes(slope_estimate,colour=meta_id))+theme_classic()+geom_density()+facet_grid(hatch_year~.)
+
+ggplot(filter(farivar2,fishery_dredge=="Fishery",hatch_year==2009),aes(slope_estimate,colour=meta_id))+theme_classic()+geom_density()+facet_grid(hatch_year~.)
+
+```
+
+## Fish & larvae same plot
+Both fish and larvae in same plots
+```{r}
+library(ggplot2)
+
+larvae_slopes <- oto5%>%
+  mutate(larvae_dredge_fishery = "larvae",
+         hatch_year = factor(year))%>%
+  select(slope,hatch_year,area,larvae_dredge_fishery,growth_center)
+
+
+fish_slopes<- farivar2%>%
+  mutate(larvae_dredge_fishery = fishery_dredge,
+         slope=slope_estimate,
+         area="DB",
+         growth_center="NA",
+         hatch_year=factor(hatch_year))%>%
+  select(slope,hatch_year,area,larvae_dredge_fishery,growth_center)
+
+larvae_and_fish <- rbind(fish_slopes,larvae_slopes)
+
+#dentity plot
+ggplot(larvae_and_fish,aes(slope,colour=larvae_dredge_fishery))+theme_classic()+geom_density()
+
+#And with a boxplot
+
+ggplot(larvae_and_fish,aes(y=slope,x=larvae_dredge_fishery))+theme_classic()+geom_boxplot()
+
+#And only for Dogger and 2008
+
+ggplot(filter(larvae_and_fish,hatch_year=="2008",area=="DB"),aes(slope,colour=larvae_dredge_fishery))+theme_classic()+geom_density()
+
+ggplot(filter(larvae_and_fish,hatch_year=="2008",area=="DB"),aes(y=slope,x=larvae_dredge_fishery))+theme_classic()+geom_boxplot()
+
+#Dogger 2009
+
+ggplot(filter(larvae_and_fish,hatch_year=="2009",area=="DB"),aes(slope,colour=larvae_dredge_fishery))+theme_classic()+geom_density()
+
+ggplot(filter(larvae_and_fish,hatch_year=="2009",area=="DB"),aes(y=slope,x=larvae_dredge_fishery))+theme_classic()+geom_boxplot()
+
+ggplot(filter(larvae_and_fish,larvae_dredge_fishery=="larvae"),aes(y=slope,x=growth_center))+theme_classic()+geom_boxplot()+xlab("Small and larger larvae")
+
+```
+
+
+# Models and statistics
+## Length~width*dist_to_center
+### lm models
+I devide the larve into large and small by selecting on whether otolith have secondary growth center or not.
+
+```{r}
+m1a.lm<-lm(sd_lgd~dist_btw_markers*dist_to_center,data=filter(oto4,growth_center=="No_sec_growth_center"))
+summary(m1a.lm)
+
+m2a.lm<-lm(sd_lgd~dist_btw_markers*dist_to_center,data=filter(oto4,growth_center=="Have_sec_growth_center"))
+summary(m2a.lm)
+```
+
+Another option is to devide larvae sizes from a mean or median length:
+```{r}
+#the mean larvae length
+mean_larvae_length <- mean(rbind(l_06,rbind(l_08,l_09))$sd_lgd)
+
+#apply to data frames
+oto5 <- oto5 %>% 
+  mutate(small_large=ifelse(sd_lgd<=mean_larvae_length,"small","large"))
+
+oto4 <- oto4%>%
+  left_join(.,select(oto5,small_large,pic_id),by="pic_id")
+
+#new models
+m1b.lm<-lm(sd_lgd~dist_btw_markers*dist_to_center,data=filter(oto4,small_large=="small"))
+summary(m1b.lm)
+
+m2b.lm<-lm(sd_lgd~dist_btw_markers*dist_to_center,data=filter(oto4,small_large=="large"))
+summary(m2b.lm)
+```
+
+### lm width~dist_center*size
+```{r}
+
+#Reviewing distance to center measures, I add 4 wich would be around 2 to 4 rings in this area  
+
+distance_limit <- min(oto4$radius_1_length)+4
+
+#Modelling increment width as function of distance to center and catagorigal size
+m1c.lm <- lm(dist_btw_markers~dist_to_center*factor(small_large),data=filter(oto4,dist_to_center<distance_limit))
+summary(m1c.lm)
+
+
+#Modelling increment width as function of distance to center and continous size
+m2c.lm<-lm(dist_btw_markers~dist_to_center*sd_lgd,data=filter(oto4,dist_to_center<distance_limit))
+summary(m2c.lm)
+
 ```
 

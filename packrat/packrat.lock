@@ -34,6 +34,11 @@ Source: CRAN
 Version: 0.1
 Hash: 0afb92b59b02593c70ff8046700ba9d3
 
+Package: beanplot
+Source: CRAN
+Version: 1.2
+Hash: 6397f4dafa178cffdb2196af0be88ade
+
 Package: bitops
 Source: CRAN
 Version: 1.0-6
